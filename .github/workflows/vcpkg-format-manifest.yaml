@@ -1,0 +1,49 @@
+name: "Vcpkg Format Manifest"
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: "${{ github.ref == 'refs/heads/main' }}"
+
+defaults:
+  run:
+    shell: "bash"
+
+env:
+  VCPKG_ROOT: "${{ github.workspace }}/vcpkg"
+
+permissions:
+  contents: "read"
+
+jobs:
+  VcpkgFormatManifest:
+    runs-on: "ubuntu-24.04"
+
+    timeout-minutes: 10
+
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v5"
+
+      - name: "Checkout vcpkg repository"
+        uses: "actions/checkout@v5"
+        with:
+          repository: "microsoft/vcpkg"
+          path: "${{ env.VCPKG_ROOT }}"
+
+      - name: "Bootstrap vcpkg"
+        working-directory: "${{ env.VCPKG_ROOT }}"
+        run: "./bootstrap-vcpkg.sh"
+
+      - name: "Run vcpkg format-manifest"
+        run: |
+          $VCPKG_ROOT/vcpkg format-manifest vcpkg-overlay-ports/wolfssl/vcpkg.json
+          $VCPKG_ROOT/vcpkg format-manifest vcpkg.json
+          git diff --quiet
