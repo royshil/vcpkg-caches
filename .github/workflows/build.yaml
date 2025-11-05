@@ -1,56 +1,54 @@
-name: "Build"
+name: Build
 
 on:
   push:
-    branches:
-      - "main"
+    branches: [main]
   pull_request:
-    branches:
-      - "main"
+    branches: [main]
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
 
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}"
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
   run:
-    shell: "bash"
+    shell: bash
 
 env:
-  VCPKG_BINARY_SOURCES: "clear;nuget,https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json,${{ github.ref == 'refs/heads/main' && 'readwrite' || 'read' }}"
-  VCPKG_ROOT: "${{ github.workspace }}/vcpkg"
+  VCPKG_BINARY_SOURCES: clear;nuget,https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json,${{ github.ref == 'refs/heads/main' && 'readwrite' || 'read' }}
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
 
 permissions:
-  contents: "read"
-  packages: "write"
+  contents: read
+  packages: write
 
 jobs:
   BuildOnMacOSArm64:
-    runs-on: "macos-15"
+    runs-on: macos-15
 
     timeout-minutes: 180
 
     steps:
-      - name: "Checkout"
-        uses: "actions/checkout@v5"
+      - name: Checkout
+        uses: actions/checkout@v5
 
-      - name: "Checkout vcpkg repository"
-        uses: "actions/checkout@v5"
+      - name: Checkout vcpkg repository
+        uses: actions/checkout@v5
         with:
-          repository: "microsoft/vcpkg"
-          path: "${{ env.VCPKG_ROOT }}"
+          repository: microsoft/vcpkg
+          path: ${{ env.VCPKG_ROOT }}
 
-      - name: "Bootstrap vcpkg"
-        working-directory: "${{ env.VCPKG_ROOT }}"
-        run: "./bootstrap-vcpkg.sh"
+      - name: Bootstrap vcpkg
+        working-directory: ${{ env.VCPKG_ROOT }}
+        run: ./bootstrap-vcpkg.sh
 
-      - name: "Install mono"
-        run: "brew install mono"
+      - name: Install mono
+        run: brew install mono
 
-      - name: "Setup NuGet Credentials"
+      - name: Setup NuGet Credentials
         run: |
           NUGET_PATH="$($VCPKG_ROOT/vcpkg fetch nuget | tail -n1)"
           mono "$NUGET_PATH" sources add \
@@ -62,32 +60,32 @@ jobs:
           mono "$NUGET_PATH" setapikey "${{ secrets.GITHUB_TOKEN }}" \
             -Source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
 
-      - name: "Build"
-        run: "$VCPKG_ROOT/vcpkg install --triplet arm64-osx-obs"
+      - name: Build
+        run: $VCPKG_ROOT/vcpkg install --triplet arm64-osx-obs
 
   BuildOnMacOSX64:
-    runs-on: "macos-15"
+    runs-on: macos-15
 
     timeout-minutes: 180
 
     steps:
-      - name: "Checkout"
-        uses: "actions/checkout@v5"
+      - name: Checkout
+        uses: actions/checkout@v5
 
-      - name: "Checkout vcpkg repository"
-        uses: "actions/checkout@v5"
+      - name: Checkout vcpkg repository
+        uses: actions/checkout@v5
         with:
-          repository: "microsoft/vcpkg"
-          path: "${{ env.VCPKG_ROOT }}"
+          repository: microsoft/vcpkg
+          path: ${{ env.VCPKG_ROOT }}
 
-      - name: "Bootstrap vcpkg"
-        working-directory: "${{ env.VCPKG_ROOT }}"
-        run: "./bootstrap-vcpkg.sh"
+      - name: Bootstrap vcpkg
+        working-directory: ${{ env.VCPKG_ROOT }}
+        run: ./bootstrap-vcpkg.sh
 
-      - name: "Install mono"
-        run: "brew install mono"
+      - name: Install mono
+        run: brew install mono
 
-      - name: "Setup NuGet Credentials"
+      - name: Setup NuGet Credentials
         run: |
           NUGET_PATH="$($VCPKG_ROOT/vcpkg fetch nuget | tail -n1)"
           mono "$NUGET_PATH" sources add \
@@ -99,30 +97,42 @@ jobs:
           mono "$NUGET_PATH" setapikey "${{ secrets.GITHUB_TOKEN }}" \
             -Source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
 
-      - name: "Build"
-        run: "$VCPKG_ROOT/vcpkg install --triplet x64-osx-obs"
+      - name: Build
+        run: $VCPKG_ROOT/vcpkg install --triplet x64-osx-obs
 
   BuildOnWindows:
-    runs-on: "windows-2022"
+    runs-on: windows-2022
 
     timeout-minutes: 180
 
     steps:
-      - name: "Checkout"
-        uses: "actions/checkout@v5"
+      - name: Checkout
+        uses: actions/checkout@v5
 
-      - name: "Checkout vcpkg repository"
-        uses: "actions/checkout@v5"
+      - name: Remove unnecessary Windows SDK
+        shell: pwsh
+        run: |
+          $vsInstallerPath = "& ""${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"""
+          $vsPath = "& ""${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"""
+
+          $componentsToRemove = "Microsoft.VisualStudio.Component.Windows10SDK.17763 " +
+                              "Microsoft.VisualStudio.Component.Windows10SDK.19041 " +
+                              "Microsoft.VisualStudio.Component.Windows11SDK.26100"
+
+          & $vsInstallerPath modify --installPath $vsPath --remove $componentsToRemove --wait --norestart
+
+      - name: Checkout vcpkg repository
+        uses: actions/checkout@v5
         with:
-          repository: "microsoft/vcpkg"
-          path: "${{ env.VCPKG_ROOT }}"
+          repository: microsoft/vcpkg
+          path: ${{ env.VCPKG_ROOT }}
 
-      - name: "Bootstrap vcpkg"
-        working-directory: "${{ env.VCPKG_ROOT }}"
-        shell: "pwsh"
-        run: ".\\bootstrap-vcpkg.bat"
+      - name: Bootstrap vcpkg
+        working-directory: ${{ env.VCPKG_ROOT }}
+        shell: pwsh
+        run: .\\bootstrap-vcpkg.bat
 
-      - name: "Setup NuGet Credentials on Windows"
+      - name: Setup NuGet Credentials on Windows
         shell: pwsh
         run: |
           $NUGET_EXE_PATH = & "${{ env.VCPKG_ROOT }}/vcpkg" fetch nuget | Select-Object -Last 1
@@ -136,32 +146,32 @@ jobs:
           & $NUGET_EXE_PATH setapikey "${{ secrets.GITHUB_TOKEN }}" `
             -Source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
 
-      - name: "Build"
-        run: "$VCPKG_ROOT/vcpkg install --triplet x64-windows-static-md-obs"
+      - name: Build
+        run: $VCPKG_ROOT/vcpkg install --triplet x64-windows-static-md-obs
 
   BuildOnUbuntu:
-    runs-on: "ubuntu-24.04"
+    runs-on: ubuntu-24.04
 
     timeout-minutes: 60
 
     steps:
-      - name: "Checkout"
-        uses: "actions/checkout@v5"
+      - name: Checkout
+        uses: actions/checkout@v5
 
-      - name: "Checkout vcpkg repository"
-        uses: "actions/checkout@v5"
+      - name: Checkout vcpkg repository
+        uses: actions/checkout@v5
         with:
-          repository: "microsoft/vcpkg"
-          path: "${{ env.VCPKG_ROOT }}"
+          repository: microsoft/vcpkg
+          path: ${{ env.VCPKG_ROOT }}
 
-      - name: "Bootstrap vcpkg"
-        working-directory: "${{ env.VCPKG_ROOT }}"
-        run: "./bootstrap-vcpkg.sh"
-      
-      - name: "Install mono"
-        run: "sudo apt-get install -y mono-devel"
+      - name: Bootstrap vcpkg
+        working-directory: ${{ env.VCPKG_ROOT }}
+        run: ./bootstrap-vcpkg.sh
 
-      - name: "Setup NuGet Credentials"
+      - name: Install mono
+        run: sudo apt-get install -y mono-devel
+
+      - name: Setup NuGet Credentials
         run: |
           NUGET_PATH="$($VCPKG_ROOT/vcpkg fetch nuget | tail -n1)"
           mono "$NUGET_PATH" sources add \
@@ -173,5 +183,5 @@ jobs:
           mono "$NUGET_PATH" setapikey "${{ secrets.GITHUB_TOKEN }}" \
             -Source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
 
-      - name: "Build"
-        run: "$VCPKG_ROOT/vcpkg install --triplet x64-linux-obs"
+      - name: Build
+        run: $VCPKG_ROOT/vcpkg install --triplet x64-linux-obs
