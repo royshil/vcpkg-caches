@@ -112,16 +112,8 @@ jobs:
       - name: Remove unnecessary Windows SDK
         shell: pwsh
         run: |
-          echo "--- Listing Program Files (Top Level) ---"
-          # 64bit (C:\Program Files)
-          ls "${env:ProgramFiles}"
-          
-          echo "--- Listing Program Files (x86) (Top Level) ---"
-          # 32bit (C:\Program Files (x86))
-          ls "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-
-          $vsInstallerPath = "& ""${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"""
-          $vsPath = "& ""${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"""
+          $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
+          $vsPath = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"
 
           $componentsToRemove = "Microsoft.VisualStudio.Component.Windows10SDK.17763 " +
                               "Microsoft.VisualStudio.Component.Windows10SDK.19041 " +
