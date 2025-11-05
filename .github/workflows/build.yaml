@@ -118,7 +118,7 @@ jobs:
           
           echo "--- Listing Program Files (x86) (Top Level) ---"
           # 32bit (C:\Program Files (x86))
-          ls "${env:ProgramFiles(x86)}"
+          ls "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
 
           $vsInstallerPath = "& ""${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"""
           $vsPath = "& ""${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"""
